@@ -204,4 +204,69 @@ public class DmpQueryService {
         }
         return map;
     }
+
+    public String getUserLabel(final JSONObject request) {
+        Map<String, Object> result = new HashMap<>();
+        Map<String, Object> resultMap = new HashMap<>();
+        try {
+            String longTengId = request.getString("longTengId") + '*';
+            String indexName = "dmp-user";
+            String indexType = "dmp-user";
+            List<Map> labelList = JSON.parseArray(request.getString("labelList"), Map.class);
+            elasticSearch.setUp();
+            Map map = elasticSearch.getUserLabel(indexName, indexType, longTengId);
+            elasticSearch.tearDown();
+            List<String> resultLabel = new ArrayList<>();
+            for (Map label : labelList) {
+                String labelName = label.get("labelName").toString();
+                String labelValue_match = label.get("labelValue").toString();
+                if (map.containsKey(labelName)) {
+                    String labelValue_user = map.get(labelName).toString();
+                    String[] labelValue_array = labelValue_user.split(",");
+                    for (String value : labelValue_array) {
+                        if (labelValue_match.contains(value)) {
+                            resultLabel.add(value);
+                        }
+                    }
+                }
+            }
+            resultMap.put("labelList", resultLabel);
+            result.put("data", resultMap);
+            result.put("state", "200");
+            result.put("message", "操作成功");
+            return JSON.toJSONString(result);
+        } catch (Exception e) {
+            result.put("data", null);
+            result.put("state", "500");
+            result.put("message", e.getMessage());
+            return JSON.toJSONString(result);
+        }
+    }
+
+    public String getUserDetail(final JSONObject request) {
+        Map<String, Object> result = new HashMap<>();
+        Map<String, Object> resultMap = new HashMap<>();
+        String indexName = "dmp-user";
+        String indexType = "dmp-user";
+        String type = request.getString("type");
+        try {
+            List<Map> labelList = JSON.parseArray(request.getString("labelList"), Map.class);
+            elasticSearch.setUp();
+            List<Map> userList = elasticSearch.getUserDetail(indexName, indexType, type, labelList);
+            elasticSearch.tearDown();
+            resultMap.put("totalNumber", userList.get(0));
+            userList.remove(0);
+            resultMap.put("userList", userList);
+            result.put("data", resultMap);
+            result.put("state", "200");
+            result.put("message", "操作成功");
+            return JSON.toJSONString(result);
+        } catch (Exception e) {
+            result.put("data", null);
+            result.put("state", "500");
+            result.put("message", e.getMessage());
+            return JSON.toJSONString(result);
+        }
+    }
+
 }

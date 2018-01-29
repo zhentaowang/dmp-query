@@ -9,6 +9,7 @@ import io.searchbox.indices.mapping.GetMapping;
 import io.searchbox.indices.mapping.PutMapping;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * JestService.java
@@ -16,6 +17,23 @@ import java.util.List;
  * Created by wzt on 05/09/2017.
  */
 class JestService {
+
+    /**
+     * Get文档
+     */
+    public Map getUserLabel(JestClient jestClient, String indexName, String typeName, String id) {
+        try {
+            Get get = new Get.Builder(indexName, id).type(typeName).build();
+            JestResult result = jestClient.execute(get);
+            if (!result.isSucceeded()) {
+                throw new RuntimeException(result.getErrorMessage()+"查询文档失败!");
+            } else {
+                return result.getSourceAsObject(Map.class);
+            }
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     /**
      * 创建索引

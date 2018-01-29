@@ -25,6 +25,7 @@
 package com.adatafun.dmpQuery.thrift;
 
 import com.adatafun.dmpQuery.controller.DmpQueryController;
+import com.adatafun.dmpQuery.service.DmpQueryService;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.wyun.thrift.server.business.IBusinessService;
@@ -40,10 +41,12 @@ import org.springframework.stereotype.Component;
 public class BusinessService implements IBusinessService {
 
     private final DmpQueryController dmpQueryController;
+    private final DmpQueryService dmpQueryService;
 
     @Autowired
-    public BusinessService(DmpQueryController dmpQueryController) {
+    public BusinessService(DmpQueryController dmpQueryController, DmpQueryService dmpQueryService) {
         this.dmpQueryController = dmpQueryController;
+        this.dmpQueryService = dmpQueryService;
     }
 
     @Override
@@ -54,6 +57,11 @@ public class BusinessService implements IBusinessService {
             case "getDmpQueryResult":
                 success = dmpQueryController.getDmpQueryResult(request);
                 break;
+            case "getUserLabel":
+                success = dmpQueryService.getUserLabel(request);
+                break;
+            case "getUserDetail":
+                success = dmpQueryService.getUserDetail(request);
             default:
                 break;
         }
