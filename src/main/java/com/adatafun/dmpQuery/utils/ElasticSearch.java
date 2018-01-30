@@ -327,6 +327,29 @@ public class ElasticSearch {
         return result;
     }
 
+    public JSONObject getDmpNums(Map<String, Object> param, JSONObject query_json) throws Exception {
+        String query = query_json.toJSONString();
+        SearchResult searchResult = jestService.search(jestClient, param.get("indexName").toString(), param.get("typeName").toString(), query);
+        JsonElement jsonElement = searchResult.getJsonObject().get("aggregations").getAsJsonObject();
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+        JSONObject result_json = new JSONObject();
+        JSONArray labelList_json = new JSONArray();
+        for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+            JsonElement jsonElement0 = entry.getValue();
+            if (jsonElement0 == null) continue;
+            String ret = jsonElement0.getAsJsonObject().get("buckets").toString();
+            List<Map> list = JSON.parseArray(ret, Map.class);
+            for (int i = 0; i < list.size(); i++) {
+                JSONObject name_json = new JSONObject();
+                name_json.put("name", list.get(i).get("key").toString());
+                name_json.put("number", list.get(i).get("doc_count"));
+                labelList_json.add(name_json);
+            }
+        }
+        result_json.put("labelList", labelList_json);
+        result_json.put("totalNumber", searchResult.getTotal());
+        return result_json;
+    }
 
     private List<Map> transferDataForm (List<Map> result) {
         List<Map> newResult = new ArrayList<>();
