@@ -14,7 +14,7 @@ public class Main {
         context.setValidating(false);
         context.load( "classpath:spring.xml", "classpath:mybatis.xml");
         context.refresh();
-        Server server = new Server(8280);
+        Server server = new Server(80);
         server.startSingleServer(SpringBeanUtil.getBean("businessService"),"businessService");
         Thread.sleep(1000000);
     }
