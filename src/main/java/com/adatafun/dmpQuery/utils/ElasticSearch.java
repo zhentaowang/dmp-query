@@ -23,6 +23,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.After;
 import org.junit.Before;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -48,6 +49,54 @@ public class ElasticSearch {
     public void tearDown() throws Exception {
 
         esFactory.closeJestClient(jestClient);
+    }
+
+    public Map getUserLabel(String indexName, String indexType, String indexId) {
+
+        return jestService.getUserLabel(jestClient, indexName, indexType, indexId);
+
+    }
+
+    public List<Map> getUserDetail(String indexName, String indexType, String type, List<Map> labelList) throws Exception {
+
+        JSONObject query_json = new JSONObject();
+        JSONObject bool_json = new JSONObject();
+        JSONObject must_or_should_json = new JSONObject();
+        JSONArray must_or_should_json_array = new JSONArray();
+        JSONObject must_not_terms = new JSONObject();
+        JSONObject must_not_terms_json = new JSONObject();
+        must_not_terms_json.put("longTengId.keyword", "");
+        must_not_terms.put("term", must_not_terms_json);
+        must_or_should_json.put("must_not", must_not_terms);
+        for (Map label : labelList) {
+            String labelName = label.get("labelName").toString() + ".keyword";
+            String labelValue_match = label.get("labelValue").toString();
+            String[] labelValue_array = labelValue_match.split(",");
+            JSONObject terms = new JSONObject();
+            JSONObject terms_json = new JSONObject();
+            terms_json.put(labelName, labelValue_array);
+            terms.put("terms", terms_json);
+            must_or_should_json_array.add(terms);
+        }
+        if (type.equals("1")) {
+            must_or_should_json.put("must", must_or_should_json_array);
+        } else {
+            must_or_should_json.put("should", must_or_should_json_array);
+        }
+        bool_json.put("bool", must_or_should_json);
+        query_json.put("query", bool_json);
+        String query = query_json.toJSONString();
+        SearchResult result = jestService.search(jestClient, indexName, indexType, query);
+        List<SearchResult.Hit<Map, Void>> hits = result.getHits(Map.class);
+        List<Map> userList = new ArrayList<>();
+        Map<String, Integer> totalNumber = new HashMap<>();
+        totalNumber.put("totalNumber", hits.size());
+        userList.add(totalNumber);
+        for (SearchResult.Hit<Map, Void> hit : hits) {
+            userList.add(hit.source);
+        }
+        return userList;
+
     }
 
     public boolean createIndex(Map<String, Object> param) throws Exception {
