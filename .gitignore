@@ -1,7 +1,7 @@
 #src/main/java/com/adatafun/computing/platform/Main.java
 #src/main/java/com/adatafun/computing/platform/conf/
 src/test/
-target/
+#target/
 #logs/
 .idea/
 api/
@@ -12,7 +12,7 @@ webapp/
 #src/main/resources/logback-test.xml
 *swagger.json
 
-*.class
+#*.class
 
 # BlueJ files
 *.ctxt
