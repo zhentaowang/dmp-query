@@ -23,14 +23,14 @@ public class ESFactory {
      */
     public JestClient getJestClient() throws Exception{
 
-        // 本地使用: 192.168.1.127(测试)，116.62.184.103(生产)；线上使用：122.224.248.26(测试)，192.168.142.57(生产)
-        Properties prop = new Properties();
-        InputStream in = new BufferedInputStream(new FileInputStream("src/main/resources/application.properties"));
-        prop.load(in);     ///加载属性列表
+        // 本地使用: 192.168.1.128(测试)，116.62.184.103(生产)；线上使用：122.224.248.26(测试)，192.168.142.57(生产)
+//        Properties props = new Properties();
+//        InputStream in = new BufferedInputStream(new FileInputStream("src/main/resources/application.properties"));
+//        props.load(in);     ///加载属性列表
         JestClientFactory factory = new JestClientFactory();
         factory.setHttpClientConfig(new HttpClientConfig
-                .Builder(prop.getProperty("elasticsearch.server.uri"))
-                .gson(new GsonBuilder().setDateFormat("yyyy-MM-dd'T'hh:mm:ss").create())
+                .Builder("http://192.168.142.57:9200")
+                .gson(new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss").create())
                 .connTimeout(1500)
                 .readTimeout(3000)
                 .multiThreaded(true)
