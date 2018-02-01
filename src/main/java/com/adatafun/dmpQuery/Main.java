@@ -12,7 +12,7 @@ public class Main {
         GenericXmlApplicationContext context = new GenericXmlApplicationContext();
         context.getEnvironment().setActiveProfiles("production");
         context.setValidating(false);
-        context.load( "classpath:spring.xml", "classpath:mybatis.xml");
+        context.load( "classpath:spring.xml");
         context.refresh();
         Server server = new Server(8080);
         server.startSingleServer(SpringBeanUtil.getBean("businessService"),"businessService");
