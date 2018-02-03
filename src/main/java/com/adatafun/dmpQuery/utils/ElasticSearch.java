@@ -85,12 +85,16 @@ public class ElasticSearch {
         }
         bool_json.put("bool", must_or_should_json);
         query_json.put("query", bool_json);
+        query_json.put("from", 0);
+        query_json.put("size", 10000);
+        String[] fieldArray = {"longTengId", "phoneNum", "idNum", "passportNum", "deviceNum", "email", "alipayId"};
+        query_json.put("_source", fieldArray);
         String query = query_json.toJSONString();
         SearchResult result = jestService.search(jestClient, indexName, indexType, query);
         List<SearchResult.Hit<Map, Void>> hits = result.getHits(Map.class);
         List<Map> userList = new ArrayList<>();
         Map<String, Integer> totalNumber = new HashMap<>();
-        totalNumber.put("totalNumber", hits.size());
+        totalNumber.put("totalNumber", result.getTotal());
         userList.add(totalNumber);
         for (SearchResult.Hit<Map, Void> hit : hits) {
             userList.add(hit.source);
