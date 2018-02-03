@@ -220,7 +220,7 @@ public class DmpQueryService {
                 String labelValue_match = label.get("labelValue").toString();
                 if (map.containsKey(labelName)) {
                     String labelValue_user = map.get(labelName).toString();
-                    String[] labelValue_array = labelValue_user.split(",");
+                    String[] labelValue_array = labelValue_user.replaceAll("\\[|]", "").split(",");
                     for (String value : labelValue_array) {
                         if (labelValue_match.contains(value)) {
                             resultLabel.add(value);

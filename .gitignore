@@ -1,7 +1,7 @@
 #src/main/java/com/adatafun/computing/platform/Main.java
 #src/main/java/com/adatafun/computing/platform/conf/
 src/test/
-#target/
+target/
 #logs/
 .idea/
 api/
