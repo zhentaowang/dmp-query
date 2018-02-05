@@ -33,8 +33,9 @@ public class DmpQueryService {
         JSONObject query_json = new JSONObject();
         query_json.put("query", createDmpQuery(queryList));
         query_json.put("aggregations", createDmpTermsAgg(param));
+        List<String> aggsRangeList = JSONArray.parseArray(JSONObject.toJSONString(param.get("aggsRangeList")), String.class);
         elasticSearch.setUp();
-        Map<String, Object> result = elasticSearch.getDmpQuery(param, query_json);
+        Map<String, Object> result = elasticSearch.getDmpNums(param, query_json, aggsRangeList);
         elasticSearch.tearDown();
 //        LZResult<Map<String, Object>> productList = new LZResult<>(getProductList(result, param, queryCount));
         Map<String, Object> path = exportDmpToExcel(result, param, queryCount);
@@ -69,6 +70,7 @@ public class DmpQueryService {
             should_json_array.add(terms);
         }
         should_json.put("should", should_json_array);
+        should_json.put("minimum_should_match", 1);
         bool.put("bool", should_json);
         return bool;
     }
@@ -140,7 +142,7 @@ public class DmpQueryService {
         HSSFWorkbook workbook = new HSSFWorkbook();
         HSSFSheet sheet = workbook.createSheet();
         List<String> keys = Arrays.asList("导出日期","输入用户数","有效用户数");
-        List<String> values = Arrays.asList("" ,String.valueOf(queryCount), result.get("total").toString());
+        List<String> values = Arrays.asList("" ,String.valueOf(queryCount), result.get("totalNumber").toString());
         List<String> code = Arrays.asList("编号","标签值","标签数量");
         setCellByColumn(sheet, keys, 0, 0);
         setCellByColumn(sheet, values, 0, 1);
@@ -189,9 +191,10 @@ public class DmpQueryService {
         setDmpCellSyle(workbook);
         Map<String, Object> map = new HashMap<>();
         try {
-            File tempFile = File.createTempFile("/Users/m2shad0w/Desktop/fileTest/testOutput", ".xls");
+
+            File tempFile = File.createTempFile("/Users/m2shad0w/Desktop/dmpQueryTest/testOutput", ".xls");
             tempFile.deleteOnExit();
-            String path = "/Users/m2shad0w/Desktop/fileTest/testOutput.xls";
+            String path = "/Users/m2shad0w/Desktop/dmpQueryTest/testOutput.xls";
             OutputStream outputStream = new FileOutputStream(path);
             workbook.write(outputStream);
             outputStream.flush();
@@ -220,7 +223,7 @@ public class DmpQueryService {
                 String labelValue_match = label.get("labelValue").toString();
                 if (map.containsKey(labelName)) {
                     String labelValue_user = map.get(labelName).toString();
-                    String[] labelValue_array = labelValue_user.replaceAll("\\[|]", "").split(",");
+                    String[] labelValue_array = labelValue_user.split(",");
                     for (String value : labelValue_array) {
                         if (labelValue_match.contains(value)) {
                             resultLabel.add(value);

@@ -5,17 +5,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.zhiweicloud.guest.APIUtil.LZResult;
-import org.apache.poi.hssf.usermodel.*;
-import org.apache.poi.ss.usermodel.HorizontalAlignment;
-import org.apache.poi.ss.usermodel.VerticalAlignment;
-import org.apache.poi.ss.util.CellRangeAddress;
 import org.springframework.stereotype.Service;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -29,38 +19,92 @@ public class DmpNumsService {
     private static ElasticSearch elasticSearch = new ElasticSearch();
 
     public String getDmpNumsResult(JSONObject request, Map<String, Object> param) throws Exception {
-        JSONObject bool_json = createQuery(request);
-        JSONObject aggs_json = creatAggs(request);
+        Map<String,Object> labels = getParams(request);
+        List<String> nameList = JSONArray.parseArray(JSONObject.toJSONString(labels.get("nameList")), String.class);
+        List<List> valueList = JSONArray.parseArray(JSONObject.toJSONString(labels.get("valueList")), List.class);
+        List<String> codeList = JSONArray.parseArray(JSONObject.toJSONString(labels.get("codeList")), String.class);
+
+        JSONObject bool_json = createQuery(nameList,valueList,request);
+        JSONObject aggs_json = creatAggs(nameList);
         JSONObject query_json = new JSONObject();
         query_json.put("query", bool_json);
         query_json.put("aggregations", aggs_json);
         elasticSearch.setUp();
-        LZResult<JSONObject> result = new LZResult<>(elasticSearch.getDmpNums(param, query_json));
+        Map<String,Object> queryList = elasticSearch.getDmpNums(param, query_json, nameList);
         elasticSearch.tearDown();
-        return JSON.toJSONString(result);
+        List<Map<String,Object>> labelList = getLabelList(queryList,codeList);
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalNumber",queryList.get("totalNumber"));
+        result.put("labelList", labelList);
+        return JSON.toJSONString( new LZResult<>(result));
     }
 
-    private JSONObject createQuery(JSONObject request) throws Exception {
-        JSONArray labelList = request.getJSONArray("labelList");
+    private List<Map<String,Object>> getLabelList(Map<String,Object> queryList, List<String> codeList) {
+        List<Map<String,Object>> labelList = new ArrayList<>();
+        Set<Map.Entry<String,Object>> set = queryList.entrySet();
+        for (String s : codeList) {
+            long value = 0;
+            for (Map.Entry<String,Object> entry : set) {
+                String name = getMatchString(entry.getKey());
+                if (s.matches(name)) {
+                    value += (long)entry.getValue();
+                }
+            }
+            Map<String,Object> name = new HashMap<>();
+            name.put("name", s);
+            name.put("number", value);
+            labelList.add(name);
+        }
+        return labelList;
+    }
+
+    private String getMatchString(String param) {
+        StringBuffer str = new StringBuffer();
+        String[] value = param.split(",");
+        for (String s : value) {
+            str.append(s+"|");
+        }
+        return str.substring(0,str.length()-1);
+    }
+
+    private Map<String,Object> getParams(JSONObject request) {
+        Map<String,Object> labels = new HashMap<>();
+        List<Map> labelList = JSON.parseArray(request.getString("labelList"), Map.class);
+        List<String> nameList = new ArrayList<>();
+        List<String> codeList = new ArrayList<>();
+        List<List<String>> valueList = new ArrayList<>();
+        for (Map map : labelList) {
+            nameList.add(map.get("labelName").toString());
+            List<String> value = Arrays.asList(map.get("labelValue").toString().split(","));
+            valueList.add(value);
+            for (String s : value) {
+                codeList.add(s);
+            }
+        }
+        labels.put("nameList", nameList);
+        labels.put("valueList", valueList);
+        labels.put("codeList", codeList);
+        return labels;
+    }
+
+    private JSONObject createQuery(List<String> nameList, List<List> valueList,JSONObject request) throws Exception {
         JSONObject bool_json = new JSONObject();
         JSONObject must_json = new JSONObject();
         JSONArray must_json_array = new JSONArray();
-        for (int i = 0; i < labelList.size(); i++) {
+        for (int i = 0; i < nameList.size(); i++) {
             JSONObject terms = new JSONObject();
-            String labelName = labelList.getJSONObject(i).getString("labelName");
-            String labelValue = labelList.getJSONObject(i).getString("labelValue");
-            List<String> value = Arrays.asList(labelValue.split(","));
+            String labelName = nameList.get(i);
+            List<String> value = valueList.get(i);
             terms = createTerms(labelName, value);
             must_json_array.add(terms);
         }
         if (request.get("type").equals("1")) {
             must_json.put("must", must_json_array);
-            bool_json.put("bool", must_json);
         } else {
             must_json.put("should", must_json_array);
             must_json.put("minimum_should_match", 1);
-            bool_json.put("bool", must_json);
         }
+        bool_json.put("bool", must_json);
         return bool_json;
     }
 
@@ -87,14 +131,11 @@ public class DmpNumsService {
         return term;
     }
 
-    private JSONObject creatAggs(JSONObject request) throws Exception {
-        JSONArray labelList = request.getJSONArray("labelList");
+    private JSONObject creatAggs(List<String> nameList) throws Exception {
         JSONObject nameJson = new JSONObject();
-        for (int i = 0; i < labelList.size(); i++) {
-            JSONObject jsonObjectAgg;
-            String labelName = labelList.getJSONObject(i).getString("labelName");
-            jsonObjectAgg = createTermsAgg(labelName);
-            nameJson.put(labelName+"RangeAgg", jsonObjectAgg);
+        for (String name : nameList) {
+            JSONObject jsonObjectAgg = createTermsAgg(name);
+            nameJson.put(name+"RangeAgg", jsonObjectAgg);
         }
         return nameJson;
     }
